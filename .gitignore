@@ -1,59 +1,45 @@
-# Flutter/Dart/Pub related
-.dart_tool/
-.packages
-.pub-cache/
-.pub/
-build/
-*.lock
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
 
-# Firebase configuration (optional to ignore if you want secrets protected)
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
-
-# Obfuscation files
-app.*.symbols
-
-# iOS
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/.symlinks/
-ios/Pods/
-ios/Runner.xcworkspace/
-ios/DerivedData/
-*.xcworkspace
-*.xcuserstate
-
-# Android
-android/.gradle/
-android/app/build/
-android/local.properties
-android/.idea/
-
-# VS Code
-.vscode/
-
-# IntelliJ/Android Studio
-.idea/
+# IntelliJ related
 *.iml
 *.ipr
 *.iws
+.idea/
 
-# macOS
-*.DS_Store
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
 
-# Linux/macOS build
-linux/flutter/ephemeral/
-macos/Flutter/ephemeral/
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
 
-# Windows build
-windows/flutter/ephemeral/
+# Symbolication related
+app.*.symbols
 
-# Web
-web/.dart_tool/
-web/build/
+# Obfuscation related
+app.*.map.json
 
-# TFLite model files (optional, large files)
-assets/models/*.tflite
-
-# Image uploads (optional)
-assets/uploads/
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release

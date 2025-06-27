@@ -35,9 +35,9 @@ ReLeaf combines gamification, social interaction, and sustainability in one plat
 
 ## 🚀 Tech Stack
 
-- **Flutter** for cross-platform development  
-- **Firebase** for authentication, storage, and real-time database  
-- **tflite_flutter / Cloud Functions** for on-device or server-side ML integration  
+- **Flutter** for cross-platform development
+- **Firebase** for authentication, storage, and real-time database
+- **tflite_flutter / Cloud Functions** for on-device or server-side ML integration
 
 ---
 
