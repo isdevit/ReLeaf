@@ -21,18 +21,6 @@ class LeaderboardScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6FDF6),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xFF4CAF50),
-        unselectedItemColor: Colors.grey,
-        currentIndex: 2, // Assuming this is the 3rd tab
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Community'),
-          BottomNavigationBarItem(icon: Icon(Icons.emoji_events), label: 'Leaderboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

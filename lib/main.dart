@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart'; // Make sure this file matches your actual location
+import 'widgets/main_screen.dart';
+
 void main() {
   runApp(const ReLeafApp());
 }
@@ -24,7 +26,7 @@ class ReLeafApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }
