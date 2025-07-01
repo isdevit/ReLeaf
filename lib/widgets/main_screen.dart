@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/leaderboard_screen.dart';
+import '../screens/community_screen.dart';
+import '../screens/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,10 +16,10 @@ class _MainScreenState extends State<MainScreen> {
 
   static final List<Widget> _screens = <Widget>[
     HomeScreen(),
-    Center(child: Text('Community (Coming Soon)')),
+    CommunityScreen(),
     LeaderboardScreen(),
     Center(child: Text('Messages (Coming Soon)')),
-    Center(child: Text('Profile (Coming Soon)')),
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
