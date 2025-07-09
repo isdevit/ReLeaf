@@ -30,22 +30,31 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  tflite_flutter: ^0.11.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  google_fonts: ^6.1.0
+  cupertino_icons:
+  google_fonts:
+  firebase_core: ^3.15.1
+  firebase_auth: ^5.6.2
+  google_sign_in: ^5.4.4
+  cloud_firestore: ^5.6.11
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_test:
     sdk: flutter
 
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/releaf_logo.png" # or releaf_logo_transparent.png
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -60,6 +69,7 @@ flutter:
 
   assets:
     - assets/images/releaf_logo_transparent.png
+    - assets/task_recommender_model.tflite
 
   # To add assets to your application, add an assets section, like this:
   # assets:
