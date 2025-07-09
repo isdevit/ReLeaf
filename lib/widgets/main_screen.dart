@@ -3,6 +3,7 @@ import '../screens/home_screen.dart';
 import '../screens/leaderboard_screen.dart';
 import '../screens/community_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/messages_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,7 +19,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     CommunityScreen(),
     LeaderboardScreen(),
-    Center(child: Text('Messages (Coming Soon)')),
+    MessagesScreen(),
     ProfileScreen(),
   ];
 
@@ -49,4 +50,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-} 
+}
