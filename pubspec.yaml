@@ -49,6 +49,8 @@ dependencies:
 
   cloud_firestore: ^5.6.11
   shared_preferences: ^2.2.2
+  image_picker: ^1.0.4
+
 
 
 dev_dependencies:
