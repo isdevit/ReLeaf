@@ -17,6 +17,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _username;
   String? _avatarUrl;
 
+  // Color palette matching community screen
+  static const Color primaryWhite = Color(0xFFFAFAFA);
+  static const Color softGreen = Color(0xFF4CAF50);
+  static const Color accentGreen = Color(0xFF8BC34A);
+  static const Color darkGray = Color(0xFF2E2E2E);
+  static const Color lightGray = Color(0xFFF5F5F5);
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +56,26 @@ class _HomeScreenState extends State<HomeScreen> {
     };
   }
 
-  // Improved minimalist completion dialog
+  Widget _buildBadge(String tag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [softGreen, accentGreen],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        tag,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   void _showCompletionDialog(BuildContext context, Map<String, dynamic> task) {
     showDialog(
       context: context,
@@ -62,14 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.verified_rounded, color: Colors.green[700], size: 48),
+              Icon(Icons.verified_rounded, color: softGreen, size: 48),
               const SizedBox(height: 16),
               Text('Complete Task',
                   style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(
                 'Upload a picture or video as proof of completion.',
-                style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
+                style: GoogleFonts.poppins(fontSize: 14, color: darkGray.withOpacity(0.6)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -77,21 +103,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.photo_camera, size: 32, color: Color(0xFF4CAF50)),
+                    icon: const Icon(Icons.photo_camera, size: 32, color: softGreen),
                     onPressed: () {
                       // TODO: Implement camera capture
                       Navigator.of(context).pop();
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.photo_library, size: 32, color: Color(0xFF4CAF50)),
+                    icon: const Icon(Icons.photo_library, size: 32, color: softGreen),
                     onPressed: () {
                       // TODO: Implement gallery picker
                       Navigator.of(context).pop();
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.videocam, size: 32, color: Color(0xFF4CAF50)),
+                    icon: const Icon(Icons.videocam, size: 32, color: softGreen),
                     onPressed: () {
                       // TODO: Implement video picker/capture
                       Navigator.of(context).pop();
@@ -115,10 +141,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final greeting = getGreeting();
     return Scaffold(
-      backgroundColor: const Color(0xFFF6FDF6),
+      backgroundColor: primaryWhite,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -142,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             greeting,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: darkGray.withOpacity(0.6),
                             ),
                           ),
                           Text(
@@ -150,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: darkGray,
                             ),
                           ),
                         ],
@@ -158,15 +184,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   Row(
-                    children: const [
-                      Icon(Icons.search, size: 24, color: Colors.black54),
-                      SizedBox(width: 14),
-                      Icon(Icons.notifications_none, size: 24, color: Colors.black54),
+                    children: [
+                      Icon(Icons.search, size: 24, color: darkGray.withOpacity(0.6)),
+                      const SizedBox(width: 16),
+                      Icon(Icons.notifications_outlined, size: 24, color: darkGray.withOpacity(0.6)),
                     ],
                   )
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 24),
               // Weekly Tasks
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -174,18 +200,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     "My Weekly Tasks",
                     style: GoogleFonts.poppins(
-                      fontSize: 17,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: darkGray,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add, size: 22, color: Color(0xFF4CAF50)),
+                    icon: Icon(Icons.add, size: 22, color: softGreen),
                     onPressed: () {},
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               FutureBuilder<Map<String, dynamic>>(
                 future: _tasksFuture,
                 builder: (context, snapshot) {
@@ -211,75 +237,80 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         "${weeklyTasks.length} Tasks Pending",
-                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                        style: GoogleFonts.poppins(fontSize: 12, color: darkGray.withOpacity(0.6)),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       SizedBox(
-                        height: 180,
+                        height: 200,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: weeklyTasks.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
                           itemBuilder: (context, index) {
                             final task = weeklyTasks[index];
-                            return Material(
-                              elevation: 2,
-                              borderRadius: BorderRadius.circular(16),
-                              color: Colors.white,
-                              child: InkWell(
+                            return Container(
+                              width: 200,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                onTap: () {},
-                                child: Container(
-                                  width: 180,
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.green.shade50,
-                                        Colors.green.shade100.withOpacity(0.2),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if ((task['tags'] as List?)?.isNotEmpty ?? false)
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: (task['tags'] as List).take(2).map((tag) => _buildBadge(tag.toString())).toList(),
+                                      ),
+                                    if ((task['tags'] as List?)?.isNotEmpty ?? false)
+                                      const SizedBox(height: 12),
+                                    Text(
+                                      task['name'] ?? '',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: darkGray,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        task['name'] ?? '',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      task['description'] ?? '',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: darkGray.withOpacity(0.7),
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const Spacer(),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.check_circle_outline, color: softGreen, size: 20),
+                                          onPressed: () => _showCompletionDialog(context, task),
+                                          tooltip: 'Mark as completed',
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        task['description'] ?? '',
-                                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const Spacer(),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50)),
-                                            onPressed: () => _showCompletionDialog(context, task),
-                                            tooltip: 'Mark as completed',
-                                          ),
-                                          const Spacer(),
-                                          IconButton(
-                                            icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF4CAF50)),
-                                            onPressed: () => _showCompletionDialog(context, task),
-                                            tooltip: 'Upload proof',
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                                        const Spacer(),
+                                        IconButton(
+                                          icon: Icon(Icons.camera_alt_outlined, color: softGreen, size: 20),
+                                          onPressed: () => _showCompletionDialog(context, task),
+                                          tooltip: 'Upload proof',
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
@@ -290,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 24),
               // Today's Tasks
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -298,18 +329,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     "Today's Tasks",
                     style: GoogleFonts.poppins(
-                      fontSize: 17,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: darkGray,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add, size: 22, color: Color(0xFF4CAF50)),
+                    icon: Icon(Icons.add, size: 22, color: softGreen),
                     onPressed: () {},
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Expanded(
                 child: FutureBuilder<Map<String, dynamic>>(
                   future: _tasksFuture,
@@ -326,68 +357,64 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemCount: dailyTasks.length,
                       itemBuilder: (context, index) {
                         final task = dailyTasks[index];
-                        return Material(
-                          elevation: 1,
-                          borderRadius: BorderRadius.circular(14),
-                          color: Colors.white,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(14),
-                            onTap: () {},
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.green.shade50,
-                                    Colors.green.shade100.withOpacity(0.15),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          task['name'] ?? '',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        task['name'] ?? '',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: darkGray,
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50)),
-                                        onPressed: () => _showCompletionDialog(context, task),
-                                        tooltip: 'Mark as completed',
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Wrap(
-                                    spacing: 4,
-                                    children: (task['tags'] as List?)?.map((tag) => Chip(
-                                      label: Text(tag.toString()),
-                                      backgroundColor: Colors.green[100],
-                                      labelStyle: const TextStyle(fontSize: 10),
-                                    )).toList() ?? [],
-                                  ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.check_circle_outline, color: softGreen, size: 20),
+                                      onPressed: () => _showCompletionDialog(context, task),
+                                      tooltip: 'Mark as completed',
+                                    ),
+                                  ],
+                                ),
+                                if ((task['tags'] as List?)?.isNotEmpty ?? false) ...[
                                   const SizedBox(height: 8),
-                                  Text(
-                                    task['description'] ?? '',
-                                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: (task['tags'] as List).take(3).map((tag) => _buildBadge(tag.toString())).toList(),
                                   ),
                                 ],
-                              ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  task['description'] ?? '',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: darkGray.withOpacity(0.7),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
                         );
