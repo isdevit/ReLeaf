@@ -1,38 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
-
-// Data model for posts - ready for Firebase integration
-class CommunityPost {
-  final String id;
-  final String userId;
-  final String username;
-  final String userAvatar;
-  final String taskType;
-  final String taskTitle;
-  final String description;
-  final String imageUrl;
-  final DateTime timestamp;
-  final int likes;
-  final int comments;
-  final List<String> badges;
-  final bool isLiked;
-
-  CommunityPost({
-    required this.id,
-    required this.userId,
-    required this.username,
-    required this.userAvatar,
-    required this.taskType,
-    required this.taskTitle,
-    required this.description,
-    required this.imageUrl,
-    required this.timestamp,
-    required this.likes,
-    required this.comments,
-    required this.badges,
-    this.isLiked = false,
-  });
-}
+import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/post_model.dart';
+import '../services/firestore_service.dart';
+import '../widgets/photo_upload_dialog.dart';
+import 'dart:io';
+import '../screens/post_detail_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -45,6 +19,10 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
   late TabController _tabController;
   late ScrollController _scrollController;
   bool _showFloatingButton = true;
+  final FirestoreService _firestoreService = FirestoreService();
+  List<PostModel> _posts = [];
+  bool _isLoading = true;
+  String? _currentUserId;
 
   // Color palette matching ReLeaf design
   static const Color primaryWhite = Color(0xFFFAFAFA);
@@ -57,9 +35,11 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    _loadPosts();
   }
 
   void _scrollListener() {
@@ -81,66 +61,34 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
     super.dispose();
   }
 
-  // Dummy data - ready for Firebase backend
-  List<CommunityPost> getDummyPosts() {
-    return [
-      CommunityPost(
-        id: "post_001",
-        userId: "user_001",
-        username: "sarah_green",
-        userAvatar: "https://images.unsplash.com/photo-1494790108755-2616b9097baa?w=150",
-        taskType: "wellness",
-        taskTitle: "Morning Yoga Session",
-        description: "Started my day with 20 minutes of yoga in the garden 🧘‍♀️ Feeling so energized and ready for the day! #MorningMotivation #WellnessJourney",
-        imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400",
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        likes: 24,
-        comments: 8,
-        badges: ["7-Day Streak", "Wellness Warrior"],
-      ),
-      CommunityPost(
-        id: "post_002",
-        userId: "user_002",
-        username: "eco_alex",
-        userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-        taskType: "eco",
-        taskTitle: "Zero Waste Lunch",
-        description: "Packed my lunch in reusable containers today! Small steps towards a more sustainable lifestyle 🌱 Who else is joining the zero waste challenge?",
-        imageUrl: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=400",
-        timestamp: DateTime.now().subtract(const Duration(hours: 4)),
-        likes: 31,
-        comments: 12,
-        badges: ["Eco Warrior", "Sustainability Star"],
-      ),
-      CommunityPost(
-        id: "post_003",
-        userId: "user_003",
-        username: "mindful_mike",
-        userAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-        taskType: "mindfulness",
-        taskTitle: "Nature Meditation",
-        description: "Found the perfect spot for today's mindfulness session. The sound of birds and rustling leaves was so peaceful 🍃",
-        imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400",
-        timestamp: DateTime.now().subtract(const Duration(hours: 6)),
-        likes: 18,
-        comments: 5,
-        badges: ["Mindful Master"],
-      ),
-      CommunityPost(
-        id: "post_004",
-        userId: "user_004",
-        username: "active_anna",
-        userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
-        taskType: "fitness",
-        taskTitle: "Bike to Work Day",
-        description: "Cycled to work instead of driving today! 🚴‍♀️ Not only great exercise but also helping reduce my carbon footprint. Win-win!",
-        imageUrl: "https://images.unsplash.com/photo-1558618666-5c0c22756114?w=400",
-        timestamp: DateTime.now().subtract(const Duration(hours: 8)),
-        likes: 42,
-        comments: 15,
-        badges: ["Eco Warrior", "Fitness Enthusiast", "7-Day Streak"],
-      ),
-    ];
+  Future<void> _loadPosts() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      final posts = await _firestoreService.getAllPosts();
+      setState(() {
+        _posts = posts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load posts: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshPosts() async {
+    await _loadPosts();
   }
 
   Widget _buildTaskTypeIcon(String taskType) {
@@ -199,164 +147,216 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildPostCard(CommunityPost post) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildPostCard(PostModel post) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PostDetailScreen(postId: post.postId),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Post header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundImage: NetworkImage(post.userAvatar),
-                  backgroundColor: lightGray,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            post.username,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                              color: darkGray,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Post header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: post.userAvatarUrl.isNotEmpty
+                        ? NetworkImage(post.userAvatarUrl)
+                        : const AssetImage(
+                        'assets/images/avatar.png') as ImageProvider,
+                    backgroundColor: lightGray,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              post.username,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                color: darkGray,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildTaskTypeIcon(post.taskType),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getTimeAgo(post.timestamp),
-                        style: TextStyle(
-                          color: darkGray.withOpacity(0.6),
-                          fontSize: 12,
+                            const SizedBox(width: 8),
+                            if (post.tags.isNotEmpty)
+                              _buildTaskTypeIcon(post.tags.first),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          _getTimeAgo(post.timestamp),
+                          style: TextStyle(
+                            color: darkGray.withOpacity(0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.more_horiz,
+                      color: darkGray.withOpacity(0.6),
+                    ),
+                    onPressed: () {
+                      // Show post options
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Task title
+            if (post.relatedTaskId != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  post.relatedTaskId!,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: darkGray,
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.more_horiz, color: darkGray.withOpacity(0.6)),
-                  onPressed: () {
-                    // Show post options
-                  },
+              ),
+
+            // Centered Post image
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                height: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-          ),
-
-          // Task title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              post.taskTitle,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: darkGray,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    post.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: lightGray,
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 64,
+                          color: darkGray.withOpacity(0.5),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: lightGray,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                                : null,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                softGreen),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
-          ),
 
-          // Post image
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            height: 250,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                image: NetworkImage(post.imageUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-
-          // Post description
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              post.description,
-              style: TextStyle(
-                color: darkGray.withOpacity(0.8),
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-          ),
-
-          // Badges
-          if (post.badges.isNotEmpty)
+            // Post description
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: post.badges.map((badge) => _buildBadge(badge)).toList(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                post.caption,
+                style: TextStyle(
+                  color: darkGray.withOpacity(0.8),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
               ),
             ),
 
-          // Post actions
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                _buildActionButton(
-                  icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: post.isLiked ? Colors.red : darkGray.withOpacity(0.6),
-                  count: post.likes,
-                  onTap: () {
-                    // Handle like
-                  },
+            // Tags
+            if (post.tags.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: post.tags.map((tag) => _buildBadge(tag)).toList(),
                 ),
-                const SizedBox(width: 24),
-                _buildActionButton(
-                  icon: Icons.chat_bubble_outline,
-                  color: darkGray.withOpacity(0.6),
-                  count: post.comments,
-                  onTap: () {
-                    // Handle comment
-                  },
-                ),
-                const SizedBox(width: 24),
-                _buildActionButton(
-                  icon: Icons.share_outlined,
-                  color: darkGray.withOpacity(0.6),
-                  onTap: () {
-                    // Handle share
-                  },
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.bookmark_border, color: darkGray.withOpacity(0.6)),
-                  onPressed: () {
-                    // Handle bookmark
-                  },
-                ),
-              ],
+              ),
+
+            // Post actions
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  _buildActionButton(
+                    icon: post.likedBy.contains(_currentUserId ?? '') ? Icons
+                        .favorite : Icons.favorite_border,
+                    color: post.likedBy.contains(_currentUserId ?? '') ? Colors
+                        .red : darkGray.withOpacity(0.6),
+                    count: post.likes,
+                    onTap: () {
+                      _handleLike(post);
+                    },
+                  ),
+                  const SizedBox(width: 24),
+                  _buildActionButton(
+                    icon: Icons.chat_bubble_outline,
+                    color: darkGray.withOpacity(0.6),
+                    count: post.comments.length,
+                    onTap: () {
+                      // Handle comment
+                    },
+                  ),
+                  const SizedBox(width: 24),
+                  _buildActionButton(
+                    icon: Icons.share_outlined,
+                    color: darkGray.withOpacity(0.6),
+                    onTap: () {
+                      _handleShare(post);
+                    },
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.bookmark_border,
+                        color: darkGray.withOpacity(0.6)),
+                    onPressed: () {
+                      // Handle bookmark
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -403,21 +403,89 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
     }
   }
 
+  Future<void> _handleLike(PostModel post) async {
+    try {
+      if (post.likedBy.contains(_currentUserId)) {
+        await _firestoreService.unlikePost(post.postId, _currentUserId!);
+      } else {
+        await _firestoreService.likePost(post.postId, _currentUserId!);
+      }
+      // Refresh posts to update like status
+      await _loadPosts();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update like: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showCreatePostDialog(BuildContext context) {
+    // Navigate to home screen to create a post
+    Navigator.of(context).pushNamed('/home');
+  }
+
+  void _handleShare(PostModel post) {
+    // For now, just show a snackbar. You can implement actual sharing later
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sharing post: ${post.caption}'),
+        backgroundColor: softGreen,
+      ),
+    );
+  }
+
   Widget _buildFeedTab() {
-    final posts = getDummyPosts();
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(softGreen),
+        ),
+      );
+    }
+
+    if (_posts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.photo_library_outlined, size: 64, color: darkGray.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'No posts yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: darkGray,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Be the first to share your progress!',
+              style: TextStyle(
+                color: darkGray.withOpacity(0.6),
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        // Handle refresh - fetch new posts from Firebase
-        await Future.delayed(const Duration(seconds: 1));
-      },
+      onRefresh: _refreshPosts,
       color: softGreen,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: posts.length,
+        itemCount: _posts.length,
         itemBuilder: (context, index) {
-          return _buildPostCard(posts[index]);
+          return _buildPostCard(_posts[index]);
         },
       ),
     );
@@ -518,7 +586,7 @@ class _CommunityScreenState extends State<CommunityScreen> with TickerProviderSt
         duration: const Duration(milliseconds: 200),
         child: FloatingActionButton.extended(
           onPressed: () {
-            // Handle create post
+            _showCreatePostDialog(context);
           },
           backgroundColor: softGreen,
           foregroundColor: Colors.white,

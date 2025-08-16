@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../task_recommender.dart';
+import '../widgets/photo_upload_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<Map<String, dynamic>> _tasksFuture;
   String? _username;
   String? _avatarUrl;
+  int _userPoints = 0;
+  List<String> _completedTaskIds = [];
 
   // Color palette matching community screen
   static const Color primaryWhite = Color(0xFFFAFAFA);
@@ -38,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _username = doc.data()?['username'] ?? user.email ?? 'User';
         _avatarUrl = doc.data()?['avatarUrl'] ?? '';
+        _userPoints = doc.data()?['points'] ?? 0;
+        _completedTaskIds = List<String>.from(doc.data()?['tasksCompleted'] ?? []);
       });
     }
   }
@@ -79,6 +84,22 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showCompletionDialog(BuildContext context, Map<String, dynamic> task) {
     showDialog(
       context: context,
+      builder: (context) => PhotoUploadDialog(
+        task: task,
+        onUploadComplete: () {
+          // Refresh tasks and user data after completion
+          setState(() {
+            _tasksFuture = _loadTasks();
+          });
+          _fetchUserData(); // Refresh user points and completed tasks
+        },
+      ),
+    );
+  }
+
+  void _showTaskSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
@@ -88,47 +109,89 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.verified_rounded, color: softGreen, size: 48),
+              Icon(Icons.camera_alt, color: softGreen, size: 48),
               const SizedBox(height: 16),
-              Text('Complete Task',
-                  style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600)),
+              Text(
+                'Share Your Progress',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
-                'Upload a picture or video as proof of completion.',
-                style: GoogleFonts.poppins(fontSize: 14, color: darkGray.withOpacity(0.6)),
+                'Select a task to share your completion photo',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: darkGray.withOpacity(0.6),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.photo_camera, size: 32, color: softGreen),
-                    onPressed: () {
-                      // TODO: Implement camera capture
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.photo_library, size: 32, color: softGreen),
-                    onPressed: () {
-                      // TODO: Implement gallery picker
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.videocam, size: 32, color: softGreen),
-                    onPressed: () {
-                      // TODO: Implement video picker/capture
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
+              FutureBuilder<Map<String, dynamic>>(
+                future: _tasksFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 100,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  
+                  if (!snapshot.hasData) {
+                    return const SizedBox(
+                      height: 100,
+                      child: Center(child: Text('No tasks available')),
+                    );
+                  }
+
+                  final weeklyTasks = snapshot.data!['weeklyTasks'] as List;
+                  final dailyTasks = snapshot.data!['dailyTasks'] as List;
+                  final allTasks = [...weeklyTasks, ...dailyTasks];
+
+                  if (allTasks.isEmpty) {
+                    return const SizedBox(
+                      height: 100,
+                      child: Center(child: Text('No tasks available')),
+                    );
+                  }
+
+                  return Container(
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: allTasks.length,
+                      itemBuilder: (context, index) {
+                        final task = allTasks[index];
+                        return ListTile(
+                          leading: Icon(Icons.task_alt, color: softGreen),
+                          title: Text(
+                            task['name'] ?? 'Task',
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            task['description'] ?? '',
+                            style: GoogleFonts.poppins(fontSize: 12),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _showCompletionDialog(context, task);
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: darkGray.withOpacity(0.6)),
+                ),
               ),
             ],
           ),
@@ -142,6 +205,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final greeting = getGreeting();
     return Scaffold(
       backgroundColor: primaryWhite,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Show a dialog to select a task for photo upload
+          _showTaskSelectionDialog(context);
+        },
+        backgroundColor: softGreen,
+        foregroundColor: Colors.white,
+        icon: Icon(Icons.camera_alt),
+        label: Text(
+          'Share Progress',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -185,6 +261,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Row(
                     children: [
+                      // Points display
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [softGreen, accentGreen],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.stars, color: Colors.white, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_userPoints',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                       Icon(Icons.search, size: 24, color: darkGray.withOpacity(0.6)),
                       const SizedBox(width: 16),
                       Icon(Icons.notifications_outlined, size: 24, color: darkGray.withOpacity(0.6)),
@@ -279,7 +381,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: darkGray,
+                                        color: _completedTaskIds.contains(task['id'] ?? task['name']) 
+                                            ? darkGray.withOpacity(0.5)
+                                            : darkGray,
+                                        decoration: _completedTaskIds.contains(task['id'] ?? task['name'])
+                                            ? TextDecoration.lineThrough
+                                            : TextDecoration.none,
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -297,17 +404,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const Spacer(),
                                     Row(
                                       children: [
-                                        IconButton(
-                                          icon: Icon(Icons.check_circle_outline, color: softGreen, size: 20),
-                                          onPressed: () => _showCompletionDialog(context, task),
-                                          tooltip: 'Mark as completed',
-                                        ),
+                                        if (_completedTaskIds.contains(task['id'] ?? task['name']))
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: softGreen,
+                                            size: 20,
+                                          )
+                                        else
+                                          IconButton(
+                                            icon: Icon(Icons.check_circle_outline, color: softGreen, size: 20),
+                                            onPressed: () => _showCompletionDialog(context, task),
+                                            tooltip: 'Mark as completed',
+                                          ),
                                         const Spacer(),
-                                        IconButton(
-                                          icon: Icon(Icons.camera_alt_outlined, color: softGreen, size: 20),
-                                          onPressed: () => _showCompletionDialog(context, task),
-                                          tooltip: 'Upload proof',
-                                        ),
+                                        if (!_completedTaskIds.contains(task['id'] ?? task['name']))
+                                          IconButton(
+                                            icon: Icon(Icons.camera_alt_outlined, color: softGreen, size: 20),
+                                            onPressed: () => _showCompletionDialog(context, task),
+                                            tooltip: 'Upload proof',
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -383,7 +498,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: darkGray,
+                                          color: _completedTaskIds.contains(task['id'] ?? task['name']) 
+                                              ? darkGray.withOpacity(0.5)
+                                              : darkGray,
+                                          decoration: _completedTaskIds.contains(task['id'] ?? task['name'])
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
