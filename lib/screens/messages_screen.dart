@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_models.dart';
 import '../services/local_chat_service.dart';
 import '../services/remote_chat_service.dart';
@@ -19,12 +19,12 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   late TabController _tabController;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
 
   ChatUser? _selectedUser;
   final LocalChatService _chatService = LocalChatService();
   final RemoteChatService _remoteService = RemoteChatService();
   final FirestoreFriendService _friendService = FirestoreFriendService();
-  final TextEditingController _searchController = TextEditingController();
   bool _isTyping = false;
   bool _otherTyping = false;
   Set<String> _requestedUserIds = {};
@@ -35,14 +35,15 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   static const Color accentGreen = Color(0xFF8BC34A);
   static const Color darkGray = Color(0xFF2E2E2E);
   static const Color lightGray = Color(0xFFF5F5F5);
-  static const Color leafGreen = Color(0xFF66BB6A);
-  static const Color receivedBubble = Color(0xFFEFF7EE); // subtle green tint for incoming
+  static const Color receivedBubble = Color(0xFFEFF7EE);
+
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Remove any call to pendingRequestsStream
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
   }
 
   @override
@@ -50,6 +51,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     _tabController.dispose();
     _messageController.dispose();
     _chatScrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -66,151 +68,132 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildBadge(String badge) {
+  Widget _buildUserCard(ChatUser user, {bool isSearchResult = false, VoidCallback? onAddTap}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [softGreen, accentGreen],
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        badge,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserListItem(ChatUser user) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: Stack(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundImage: NetworkImage(user.avatar),
-              backgroundColor: lightGray,
-            ),
-            if (user.isOnline)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                user.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: darkGray,
-                ),
-              ),
-            ),
-            if (user.unreadCount > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: softGreen,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  user.unreadCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              user.lastMessage,
-              style: TextStyle(
-                color: darkGray.withOpacity(0.7),
-                fontSize: 14,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Stack(
               children: [
-                if (user.badges.isNotEmpty)
-                  Expanded(
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 2,
-                      children: user.badges.take(2).map((badge) => _buildBadge(badge)).toList(),
+                CircleAvatar(
+                  radius: 28,
+                  backgroundImage: user.avatar.isNotEmpty
+                      ? NetworkImage(user.avatar)
+                      : const AssetImage('assets/images/avatar.png') as ImageProvider,
+                  backgroundColor: lightGray,
+                ),
+                if (user.isOnline && !isSearchResult)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
                     ),
                   ),
-                Text(
-                  _getTimeAgo(user.lastMessageTime),
-                  style: TextStyle(
-                    color: darkGray.withOpacity(0.5),
-                    fontSize: 12,
-                  ),
-                ),
               ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: darkGray,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (!isSearchResult && user.unreadCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: softGreen,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            user.unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (!isSearchResult)
+                    Text(
+                      user.lastMessage,
+                      style: TextStyle(
+                        color: darkGray.withOpacity(0.6),
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isSearchResult ? 'Tap to add friend' : _getTimeAgo(user.lastMessageTime),
+                        style: TextStyle(
+                          color: darkGray.withOpacity(0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (isSearchResult)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _requestedUserIds.contains(user.id)
+                                  ? [Colors.grey, Colors.grey]
+                                  : [softGreen, accentGreen],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _requestedUserIds.contains(user.id) ? 'Requested' : 'Add Friend',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        onTap: () {
-          setState(() {
-            _selectedUser = user;
-          });
-          _chatService.markChatAsRead(user.id);
-          _remoteService.otherUserTypingStream(user.id).listen((isTyping) {
-            if (!mounted) return;
-            setState(() => _otherTyping = isTyping);
-          });
-          // Scroll to bottom when opening chat
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_chatScrollController.hasClients) {
-              _chatScrollController.animateTo(
-                _chatScrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-        },
       ),
     );
   }
@@ -299,7 +282,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
                         else if (message.status == MessageStatus.delivered)
                           Icon(Icons.done_all, size: 14, color: Colors.white.withOpacity(0.85))
                         else if (message.status == MessageStatus.read)
-                          const Icon(Icons.done_all, size: 14, color: Colors.lightBlueAccent),
+                            const Icon(Icons.done_all, size: 14, color: Colors.lightBlueAccent),
                       ],
                     ],
                   ),
@@ -308,43 +291,6 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFriendRequestTile(Map<String, dynamic> r, {bool highlighted = false}) {
-    final String fromUserId = (r['from'] as String? ?? '').trim();
-    return Card(
-      color: highlighted ? Colors.yellow[50] : Colors.white,
-      child: StreamBuilder<Map<String, dynamic>?>(
-        stream: _friendService.userStream(fromUserId),
-        builder: (context, snap) {
-          final userDoc = snap.data;
-          final String username = (userDoc?['username'] as String?) ?? 'Someone';
-          final String avatarUrl = (userDoc?['avatarUrl'] as String?) ?? '';
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-              backgroundColor: lightGray,
-              child: avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.grey) : null,
-            ),
-            title: Text(username, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('sent you a friend request'),
-            trailing: Wrap(
-              spacing: 8,
-              children: [
-                TextButton(
-                  onPressed: () => _friendService.acceptFriendRequest(fromUserId),
-                  child: const Text('Accept'),
-                ),
-                TextButton(
-                  onPressed: () => _friendService.declineFriendRequest(fromUserId),
-                  child: const Text('Decline'),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }
@@ -382,7 +328,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
               }
               final ChatMessage imageMsg = ChatMessage(
                 id: "msg_${DateTime.now().millisecondsSinceEpoch}",
-                senderId: '',
+                senderId: _currentUserId ?? '',
                 senderName: '',
                 content: '',
                 timestamp: DateTime.now(),
@@ -448,16 +394,14 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
 
     final ChatMessage newMessage = ChatMessage(
       id: "msg_${DateTime.now().millisecondsSinceEpoch}",
-      senderId: "current_user",
+      senderId: _currentUserId ?? '',
       senderName: "You",
       content: _messageController.text.trim(),
       timestamp: DateTime.now(),
       isMe: true,
     );
 
-    // Write immediately to local for snappy UX
     _chatService.sendMessage(toUserId: _selectedUser!.id, message: newMessage);
-    // Mirror to remote for real-time sync
     _remoteService.sendMessage(toUserId: _selectedUser!.id, message: newMessage);
     _messageController.clear();
     if (_selectedUser != null) {
@@ -494,41 +438,98 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   Widget _buildUsersTab() {
     return Column(
       children: [
+        // Search Bar
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search username to add friend',
-                    filled: true,
-                    fillColor: lightGray,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                    prefixIcon: const Icon(Icons.search),
-                  ),
-                  onSubmitted: (_) => setState(() {}),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search username to add friend',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: Icon(Icons.search, color: darkGray.withOpacity(0.6)),
+                hintStyle: TextStyle(color: darkGray.withOpacity(0.6)),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => setState(() {}),
-                child: const Text('Search'),
-              ),
-            ],
+              onSubmitted: (_) => setState(() {}),
+            ),
           ),
         ),
+        // Search Results
         Expanded(
           child: FutureBuilder<List<Map<String, dynamic>>>(
             future: _friendService.searchUsersByUsername(_searchController.text),
             builder: (context, snapshot) {
               final results = snapshot.data ?? <Map<String, dynamic>>[];
               if ((_searchController.text).trim().isEmpty) {
-                return const Center(child: Text('Search for friends by username'));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search, size: 64, color: darkGray.withOpacity(0.5)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Search for friends',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: darkGray,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enter a username to find and add friends',
+                        style: TextStyle(
+                          color: darkGray.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
               }
               if (results.isEmpty) {
-                return const Center(child: Text('No users found'));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.person_search, size: 64, color: darkGray.withOpacity(0.5)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No users found',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: darkGray,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Try a different username',
+                        style: TextStyle(
+                          color: darkGray.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               }
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -536,40 +537,15 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
                 itemBuilder: (context, index) {
                   final u = results[index];
                   final chatUser = _toChatUserFromUserDoc(u);
-                  final bool requested = _requestedUserIds.contains(
-                      chatUser.id);
-                  return ListTile(
-                    leading: CircleAvatar(backgroundImage: NetworkImage(chatUser.avatar), backgroundColor: lightGray),
-                    title: Text(chatUser.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    trailing: TextButton(
-                      onPressed: requested
-                          ? null
-                          : () async {
-                        await _friendService.sendFriendRequest(chatUser.id);
-                        setState(() {
-                          _requestedUserIds.add(chatUser.id);
-                        });
-                      },
-                      child: Text(requested ? 'Requested' : 'Add'),
-                    ),
+                  return GestureDetector(
+                    onTap: !_requestedUserIds.contains(chatUser.id) ? () async {
+                      await _friendService.sendFriendRequest(chatUser.id);
+                      setState(() {
+                        _requestedUserIds.add(chatUser.id);
+                      });
+                    } : null,
+                    child: _buildUserCard(chatUser, isSearchResult: true),
                   );
-                },
-              );
-            },
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _friendService.incomingRequestsStream(),
-            builder: (context, snapshot) {
-              final requests = snapshot.data ?? <Map<String, dynamic>>[];
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: requests.length,
-                itemBuilder: (context, index) {
-                  final r = requests[index];
-                  return _buildFriendRequestTile(r);
                 },
               );
             },
@@ -584,37 +560,70 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
       stream: _friendService.friendsStream(),
       builder: (context, friendsSnapshot) {
         final friends = friendsSnapshot.data ?? <Map<String, dynamic>>[];
-        return StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _friendService.incomingRequestsStream(),
-          builder: (context, requestsSnapshot) {
-            final requests = requestsSnapshot.data ?? <Map<String, dynamic>>[];
-            final total = friends.length + requests.length;
-            if (total == 0) {
-              return const Center(child: Text('No chats or requests'));
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: total,
-              itemBuilder: (context, index) {
-                if (index < requests.length) {
-                  final r = requests[index];
-                  return _buildFriendRequestTile(r, highlighted: true);
-                } else {
-                  final idx = index - requests.length;
-                  final f = friends[idx];
-                  final String friendUserId = f['userId'] as String;
-                  return StreamBuilder<Map<String, dynamic>?>(
-                    stream: _friendService.userStream(friendUserId),
-                    builder: (context, snap) {
-                      final userDoc = snap.data;
-                      if (userDoc == null) {
-                        return const SizedBox.shrink();
-                      }
-                      final chatUser = _toChatUserFromUserDoc(userDoc);
-                      return _buildUserListItem(chatUser);
-                    },
-                  );
+        if (friends.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: darkGray.withOpacity(0.5)),
+                const SizedBox(height: 16),
+                Text(
+                  'No chats yet',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: darkGray,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start a conversation with your friends',
+                  style: TextStyle(
+                    color: darkGray.withOpacity(0.6),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: friends.length,
+          itemBuilder: (context, index) {
+            final f = friends[index];
+            final String friendUserId = f['userId'] as String;
+            return StreamBuilder<Map<String, dynamic>?>(
+              stream: _friendService.userStream(friendUserId),
+              builder: (context, snap) {
+                final userDoc = snap.data;
+                if (userDoc == null) {
+                  return const SizedBox.shrink();
                 }
+                final chatUser = _toChatUserFromUserDoc(userDoc);
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedUser = chatUser;
+                    });
+                    _chatService.markChatAsRead(chatUser.id);
+                    _remoteService.otherUserTypingStream(chatUser.id).listen((isTyping) {
+                      if (!mounted) return;
+                      setState(() => _otherTyping = isTyping);
+                    });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_chatScrollController.hasClients) {
+                        _chatScrollController.animateTo(
+                          _chatScrollController.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    });
+                  },
+                  child: _buildUserCard(chatUser),
+                );
               },
             );
           },
@@ -677,9 +686,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         actions: [
           IconButton(
             icon: Icon(Icons.more_vert, color: darkGray),
-            onPressed: () {
-              // Handle chat options
-            },
+            onPressed: () {},
           ),
         ],
       ),
@@ -689,18 +696,29 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
             child: StreamBuilder<List<ChatMessage>>(
               stream: _selectedUser != null
                   ? _remoteService
-                      .messagesStream(_selectedUser!.id)
-                      .distinct()
-                      .map((remote) {
-                        // Merge remote into local for offline persistence
-                        _chatService.mergeMessages(_selectedUser!.id, remote);
-                        return remote;
-                      })
+                  .messagesStream(_selectedUser!.id)
+                  .distinct()
+                  .map((remote) {
+                // Fix the isMe property based on current user
+                final correctedMessages = remote.map((message) {
+                  return ChatMessage(
+                    id: message.id,
+                    senderId: message.senderId,
+                    senderName: message.senderName,
+                    content: message.content,
+                    timestamp: message.timestamp,
+                    isMe: message.senderId == _currentUserId,
+                    status: message.status,
+                    type: message.type,
+                    mediaUrl: message.mediaUrl,
+                  );
+                }).toList();
+                _chatService.mergeMessages(_selectedUser!.id, correctedMessages);
+                return correctedMessages;
+              })
                   : const Stream<List<ChatMessage>>.empty(),
               builder: (context, snapshot) {
-                // Fallback to local stream if remote empty or not yet connected
                 final List<ChatMessage> messages = snapshot.data ?? <ChatMessage>[];
-                // Mark incoming messages as read
                 if (_selectedUser != null) {
                   for (final m in messages) {
                     if (!m.isMe && (m.status != MessageStatus.read)) {
@@ -712,7 +730,6 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
                     }
                   }
                 }
-                // Auto scroll when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_chatScrollController.hasClients) {
                     _chatScrollController.jumpTo(_chatScrollController.position.maxScrollExtent);
@@ -769,16 +786,8 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: darkGray),
-            onPressed: () {
-              // Handle search
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.add, color: darkGray),
-            onPressed: () {
-              // Handle new message
-            },
+            icon: Icon(Icons.notifications_outlined, color: darkGray),
+            onPressed: () {},
           ),
         ],
         bottom: TabBar(
@@ -788,7 +797,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
           indicatorColor: softGreen,
           indicatorWeight: 3,
           tabs: const [
-            Tab(icon: Icon(Icons.people), text: 'Users'),
+            Tab(icon: Icon(Icons.person_add), text: 'Add Friends'),
             Tab(icon: Icon(Icons.chat), text: 'Chats'),
           ],
         ),
