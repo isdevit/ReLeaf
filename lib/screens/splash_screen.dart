@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'auth/sign_in_screen.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

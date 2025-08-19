@@ -48,6 +48,11 @@ dependencies:
   google_sign_in: ^5.4.4
 
   cloud_firestore: ^5.6.11
+  firebase_storage: ^12.2.2
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.4
+  # image_cropper: ^6.0.0  # Removed due to compatibility issues
+
 
 
 dev_dependencies:
