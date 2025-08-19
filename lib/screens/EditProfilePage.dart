@@ -7,35 +7,18 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'EditProfilePage.dart';
-import 'Statistics.dart';
 import 'auth/sign_in_screen.dart';
 
-// ---------- Helper for Page Slide Transition ----------
-void navigateWithSlide(BuildContext context, Widget page) {
-  Navigator.push(
-    context,
-    PageRouteBuilder(
-      pageBuilder: (_, __, ___) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.easeInOut;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    ),
-  );
-}
 
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class EditProfilePage extends StatefulWidget {
+  const EditProfilePage({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<EditProfilePage> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<EditProfilePage> {
   File? _imageFile;
   String _username = 'User';
   String? _avatarUrl;
@@ -101,15 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // Update tasks completed count from posts
           final postsCount = await _getUserPostsCount();
-          final totalLikes = await _getUserTotalLikes();
-          final avgDailyPosts = await _getUserAverageDailyPosts();
-          final bestPost = await _getUserBestPost();
-          final totalEngagement = await _getUserTotalEngagement();
-          final totalShares = await _getUserTotalShares();
-          final totalComments = await _getUserTotalComments();
-          final totalViews = await _getUserTotalViews();
-          final totalFollowers = await _getUserTotalFollowers();
-          final totalFollowing = await _getUserTotalFollowing();
+
           setState(() {
             _tasksCompleted = postsCount;
             // You can add totalLikes, avgDailyPosts, bestPost, totalEngagement, totalShares, totalComments, totalViews, totalFollowers, and totalFollowing to state if you want to display them
@@ -1171,116 +1146,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Statistics
-                Text(
-                  'Statistics',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: darkGray,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _isLoadingStats
-                    ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(softGreen),
-                  ),
-                )
-                    : GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.2,
-                  children: [
-                    _buildStatCard(
-                      title: 'Tasks Completed',
-                      value: _formatNumber(_tasksCompleted),
-                      icon: Icons.check_circle,
-                      color: softGreen,
-                    ),
-                    _buildStatCard(
-                      title: 'Current Streak',
-                      value: '$_currentStreak days',
-                      icon: Icons.local_fire_department,
-                      color: Colors.orange,
-                    ),
-                    _buildStatCard(
-                      title: 'Points Earned',
-                      value: _formatNumber(_pointsEarned),
-                      icon: Icons.stars,
-                      color: Colors.amber,
-                    ),
-                    _buildStatCard(
-                      title: 'Badges Earned',
-                      value: _formatNumber(_badgesEarned),
-                      icon: Icons.emoji_events,
-                      color: Colors.purple,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Profile Options
+               
 
-                Text(
-                  'Settings',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: darkGray,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildProfileCard(
-                  title: 'Edit Profile',
-                  icon: Icons.person_outline,
-                  onTap: () {
-                    navigateWithSlide(context, EditProfilePage());
-                  },
-                ),
-                _buildProfileCard(
-                  title: 'Achievements',
-                  icon: Icons.emoji_events_outlined,
-                  onTap: () {
-                    // TODO: Navigate to achievements screen
-                  },
-                ),
-                _buildProfileCard(
-                  title: 'Statistics',
-                  icon: Icons.analytics_outlined,
-                  onTap: () {
-                    navigateWithSlide(context, Statistics());
-                  },
-                ),
-                _buildProfileCard(
-                  title: 'Notifications',
-                  icon: Icons.notifications_outlined,
-                  onTap: () {
-                    // TODO: Navigate to notifications settings
-                  },
-                ),
-                _buildProfileCard(
-                  title: 'Privacy Settings',
-                  icon: Icons.security_outlined,
-                  onTap: () {
-                    // TODO: Navigate to privacy settings
-                  },
-                ),
-                _buildProfileCard(
-                  title: 'Help & Support',
-                  icon: Icons.help_outline,
-                  onTap: () {
-                    // TODO: Navigate to help screen
-                  },
-                ),
-                _buildProfileCard(
-                  title: 'Sign Out',
-                  icon: Icons.logout,
-                  onTap: _signOut,
-                  iconColor: Colors.red,
-                ),
+
+
               ],
             ),
           ),

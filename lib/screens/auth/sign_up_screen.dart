@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -16,7 +15,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isGoogleLoading = false;
 
   Future<void> _signUp() async {
     if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -47,7 +45,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'username': _nameController.text.trim(),
           'email': _emailController.text.trim(),
-          'avatarUrl': '', // You can update this later
+          'avatarUrl': '',
           'points': 0,
           'tasksCompleted': [],
           'badges': [],
@@ -91,41 +89,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     } finally {
       setState(() { _isLoading = false; });
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    setState(() { _isGoogleLoading = true; });
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        setState(() { _isGoogleLoading = false; });
-        return; // User cancelled
-      }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const SignInScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Google Sign In Failed'),
-          content: Text(e.message ?? 'An error occurred.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      setState(() { _isGoogleLoading = false; });
     }
   }
 
@@ -187,40 +150,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     elevation: 2,
                   ),
                   child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Sign Up', style: TextStyle(fontSize: 16)),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('or'),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: _isGoogleLoading ? null : _signInWithGoogle,
-                  icon: Image.asset('assets/images/releaf_logo_transparent.png', height: 24),
-                  label: _isGoogleLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Sign up with Google'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                    side: const BorderSide(color: Color(0xFF4CAF50)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 1,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const SignInScreen()),
-                    );
-                  },
-                  child: const Text('Already have an account? Sign In', style: TextStyle(fontSize: 15)),
                 ),
               ],
             ),
