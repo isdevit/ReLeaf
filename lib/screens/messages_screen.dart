@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 
 // Data models for messaging
 class ChatUser {
@@ -59,6 +59,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   final ScrollController _chatScrollController = ScrollController();
 
   ChatUser? _selectedUser;
+  List<ChatMessage> _messages = [];
 
   // Color palette matching ReLeaf design
   static const Color primaryWhite = Color(0xFFFAFAFA);
@@ -82,57 +83,125 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     super.dispose();
   }
 
-  // Firestore streams
-  Stream<List<ChatUser>> getChatUsersStream() {
-    return FirebaseFirestore.instance.collection('users').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return ChatUser(
-          id: doc.id,
-          name: data['username'] ?? '',
-          avatar: data['avatarUrl'] ?? '',
-          lastMessage: data['lastMessage'] ?? '',
-          lastMessageTime: (data['lastMessageTime'] != null && data['lastMessageTime'] is Timestamp)
-              ? (data['lastMessageTime'] as Timestamp).toDate()
-              : DateTime.now(),
-          unreadCount: data['unreadCount'] ?? 0,
-          isOnline: data['isOnline'] ?? false,
-          badges: List<String>.from(data['badges'] ?? []),
-        );
-      }).toList();
-    });
+  // Dummy data for chat users
+  List<ChatUser> getChatUsers() {
+    return [
+      ChatUser(
+        id: "user_001",
+        name: "Sarah Green",
+        avatar: "https://images.unsplash.com/photo-1494790108755-2616b9097baa?w=150",
+        lastMessage: "Great job on your yoga session today! 🧘‍♀️",
+        lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
+        unreadCount: 2,
+        isOnline: true,
+        badges: ["Wellness Warrior", "7-Day Streak"],
+      ),
+      ChatUser(
+        id: "user_002",
+        name: "Alex Turner",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+        lastMessage: "Want to join me for the zero waste challenge?",
+        lastMessageTime: DateTime.now().subtract(const Duration(hours: 1)),
+        unreadCount: 0,
+        isOnline: true,
+        badges: ["Eco Warrior"],
+      ),
+      ChatUser(
+        id: "user_003",
+        name: "Mindful Mike",
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+        lastMessage: "That meditation spot looks amazing!",
+        lastMessageTime: DateTime.now().subtract(const Duration(hours: 3)),
+        unreadCount: 1,
+        isOnline: false,
+        badges: ["Mindful Master"],
+      ),
+      ChatUser(
+        id: "user_004",
+        name: "Active Anna",
+        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+        lastMessage: "Cycling to work is such a great idea! 🚴‍♀️",
+        lastMessageTime: DateTime.now().subtract(const Duration(hours: 8)),
+        unreadCount: 0,
+        isOnline: false,
+        badges: ["Fitness Enthusiast"],
+      ),
+      ChatUser(
+        id: "user_005",
+        name: "Emma Wilson",
+        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+        lastMessage: "Thanks for the motivation! 💪",
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 1)),
+        unreadCount: 0,
+        isOnline: true,
+        badges: ["Community Helper"],
+      ),
+      ChatUser(
+        id: "user_006",
+        name: "James Parker",
+        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+        lastMessage: "See you at the community event!",
+        lastMessageTime: DateTime.now().subtract(const Duration(days: 2)),
+        unreadCount: 0,
+        isOnline: false,
+        badges: ["Event Organizer"],
+      ),
+    ];
   }
 
-  Stream<List<ChatMessage>> getMessagesStream(String userId) {
-    return FirebaseFirestore.instance
-        .collection('chats')
-        .doc(_getChatId(userId))
-        .collection('messages')
-        .orderBy('timestamp')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return ChatMessage(
-          id: doc.id,
-          senderId: data['senderId'] ?? '',
-          senderName: data['senderName'] ?? '',
-          content: data['content'] ?? '',
-          timestamp: (data['timestamp'] != null && data['timestamp'] is Timestamp)
-              ? (data['timestamp'] as Timestamp).toDate()
-              : DateTime.now(),
-          isMe: data['senderId'] == 'current_user', // Replace with actual current user id
-          type: MessageType.text,
-        );
-      }).toList();
-    });
-  }
-
-  String _getChatId(String otherUserId) {
-    final currentUserId = 'current_user'; // Replace with actual current user id
-    return currentUserId.compareTo(otherUserId) < 0
-        ? '${currentUserId}_$otherUserId'
-        : '${otherUserId}_$currentUserId';
+  // Dummy messages for chat
+  List<ChatMessage> getMessagesForUser(String userId) {
+    final messages = [
+      ChatMessage(
+        id: "msg_001",
+        senderId: userId,
+        senderName: "Sarah Green",
+        content: "Hey! I saw your post about the morning yoga session. That's so inspiring! 🧘‍♀️",
+        timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
+        isMe: false,
+      ),
+      ChatMessage(
+        id: "msg_002",
+        senderId: "current_user",
+        senderName: "You",
+        content: "Thank you so much! It really helps me start the day with positive energy. You should try it too!",
+        timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
+        isMe: true,
+      ),
+      ChatMessage(
+        id: "msg_003",
+        senderId: userId,
+        senderName: "Sarah Green",
+        content: "I'd love to! Do you have any beginner-friendly routines you'd recommend?",
+        timestamp: DateTime.now().subtract(const Duration(minutes: 20)),
+        isMe: false,
+      ),
+      ChatMessage(
+        id: "msg_004",
+        senderId: "current_user",
+        senderName: "You",
+        content: "Absolutely! I usually start with sun salutations. There's a great app called 'Daily Yoga' that has 10-minute morning routines.",
+        timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
+        isMe: true,
+      ),
+      ChatMessage(
+        id: "msg_005",
+        senderId: userId,
+        senderName: "Sarah Green",
+        content: "Perfect! I'll download it tonight. Thanks for the tip! 🙏",
+        timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
+        isMe: false,
+      ),
+      ChatMessage(
+        id: "msg_006",
+        senderId: userId,
+        senderName: "Sarah Green",
+        content: "Great job on your yoga session today! 🧘‍♀️",
+        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+        isMe: false,
+      ),
+    ];
+    return messages;
   }
 
   Widget _buildBadge(String badge) {
@@ -263,6 +332,17 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         onTap: () {
           setState(() {
             _selectedUser = user;
+            _messages = getMessagesForUser(user.id);
+          });
+          // Scroll to bottom when opening chat
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_chatScrollController.hasClients) {
+              _chatScrollController.animateTo(
+                _chatScrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
           });
         },
       ),
@@ -404,27 +484,24 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     );
   }
 
-  void _sendMessage() async {
-    if (_messageController.text.trim().isEmpty || _selectedUser == null) return;
+  void _sendMessage() {
+    if (_messageController.text.trim().isEmpty) return;
 
-    final currentUserId = 'current_user'; // Replace with actual current user id
-    final currentUserName = 'You'; // Replace with actual current user name
-    final chatId = _getChatId(_selectedUser!.id);
-    final messageData = {
-      'senderId': currentUserId,
-      'senderName': currentUserName,
-      'content': _messageController.text.trim(),
-      'timestamp': DateTime.now(),
-    };
+    final newMessage = ChatMessage(
+      id: "msg_${DateTime.now().millisecondsSinceEpoch}",
+      senderId: "current_user",
+      senderName: "You",
+      content: _messageController.text.trim(),
+      timestamp: DateTime.now(),
+      isMe: true,
+    );
 
-    await FirebaseFirestore.instance
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .add(messageData);
+    setState(() {
+      _messages.add(newMessage);
+      _messageController.clear();
+    });
 
-    _messageController.clear();
-
+    // Scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_chatScrollController.hasClients) {
         _chatScrollController.animateTo(
@@ -452,48 +529,38 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   }
 
   Widget _buildUsersTab() {
-    return StreamBuilder<List<ChatUser>>(
-      stream: getChatUsersStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final users = snapshot.data ?? [];
-        return RefreshIndicator(
-          onRefresh: () async {},
-          color: softGreen,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              return _buildUserListItem(users[index]);
-            },
-          ),
-        );
+    final users = getChatUsers();
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.delayed(const Duration(seconds: 1));
       },
+      color: softGreen,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          return _buildUserListItem(users[index]);
+        },
+      ),
     );
   }
 
   Widget _buildChatsTab() {
-    return StreamBuilder<List<ChatUser>>(
-      stream: getChatUsersStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final chats = (snapshot.data ?? []).where((user) => user.lastMessage.isNotEmpty).toList();
-        return RefreshIndicator(
-          onRefresh: () async {},
-          color: softGreen,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: chats.length,
-            itemBuilder: (context, index) {
-              return _buildUserListItem(chats[index]);
-            },
-          ),
-        );
+    final chats = getChatUsers().where((user) => user.lastMessage.isNotEmpty).toList();
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.delayed(const Duration(seconds: 1));
       },
+      color: softGreen,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: chats.length,
+        itemBuilder: (context, index) {
+          return _buildUserListItem(chats[index]);
+        },
+      ),
     );
   }
 
@@ -508,6 +575,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
           onPressed: () {
             setState(() {
               _selectedUser = null;
+              _messages = [];
             });
           },
         ),
@@ -546,28 +614,21 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         actions: [
           IconButton(
             icon: Icon(Icons.more_vert, color: darkGray),
-            onPressed: () {},
+            onPressed: () {
+              // Handle chat options
+            },
           ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<ChatMessage>>(
-              stream: _selectedUser != null ? getMessagesStream(_selectedUser!.id) : const Stream.empty(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final messages = snapshot.data ?? [];
-                return ListView.builder(
-                  controller: _chatScrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    return _buildMessageBubble(messages[index]);
-                  },
-                );
+            child: ListView.builder(
+              controller: _chatScrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                return _buildMessageBubble(_messages[index]);
               },
             ),
           ),
@@ -579,9 +640,11 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    return _selectedUser != null
-        ? _buildChatView()
-        : Scaffold(
+    if (_selectedUser != null) {
+      return _buildChatView();
+    }
+
+    return Scaffold(
       backgroundColor: primaryWhite,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -610,11 +673,15 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         actions: [
           IconButton(
             icon: Icon(Icons.search, color: darkGray),
-            onPressed: () {},
+            onPressed: () {
+              // Handle search
+            },
           ),
           IconButton(
             icon: Icon(Icons.add, color: darkGray),
-            onPressed: () {},
+            onPressed: () {
+              // Handle new message
+            },
           ),
         ],
         bottom: TabBar(
