@@ -270,4 +270,8 @@ class _StatisticsState extends State<Statistics> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c

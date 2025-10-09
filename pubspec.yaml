@@ -53,6 +53,12 @@ dependencies:
   image_picker: ^1.0.4
   # image_cropper: ^6.0.0  # Removed due to compatibility issues
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
 
 
 dev_dependencies:
