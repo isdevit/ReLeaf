@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_models.dart';
 import '../services/local_chat_service.dart';
@@ -7,6 +8,54 @@ import '../services/firestore_friend_service.dart';
 import '../services/firestore_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+=======
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Data models for messaging
+class ChatUser {
+  final String id;
+  final String name;
+  final String avatar;
+  final String lastMessage;
+  final DateTime lastMessageTime;
+  final int unreadCount;
+  final bool isOnline;
+  final List<String> badges;
+
+  ChatUser({
+    required this.id,
+    required this.name,
+    required this.avatar,
+    required this.lastMessage,
+    required this.lastMessageTime,
+    this.unreadCount = 0,
+    this.isOnline = false,
+    this.badges = const [],
+  });
+}
+
+class ChatMessage {
+  final String id;
+  final String senderId;
+  final String senderName;
+  final String content;
+  final DateTime timestamp;
+  final bool isMe;
+  final MessageType type;
+
+  ChatMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderName,
+    required this.content,
+    required this.timestamp,
+    required this.isMe,
+    this.type = MessageType.text,
+  });
+}
+
+enum MessageType { text, image, system }
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -22,12 +71,15 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   final TextEditingController _searchController = TextEditingController();
 
   ChatUser? _selectedUser;
+<<<<<<< HEAD
   final LocalChatService _chatService = LocalChatService();
   final RemoteChatService _remoteService = RemoteChatService();
   final FirestoreFriendService _friendService = FirestoreFriendService();
   bool _isTyping = false;
   bool _otherTyping = false;
   Set<String> _requestedUserIds = {};
+=======
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
 
   // Color palette matching ReLeaf design
   static const Color primaryWhite = Color(0xFFFAFAFA);
@@ -55,6 +107,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     super.dispose();
   }
 
+<<<<<<< HEAD
   ChatUser _toChatUserFromUserDoc(Map<String, dynamic> userDoc) {
     return ChatUser(
       id: userDoc['id'] as String,
@@ -65,6 +118,78 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
       unreadCount: 0,
       isOnline: userDoc['isOnline'] as bool? ?? false,
       badges: const [],
+=======
+  // Firestore streams
+  Stream<List<ChatUser>> getChatUsersStream() {
+    return FirebaseFirestore.instance.collection('users').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ChatUser(
+          id: doc.id,
+          name: data['username'] ?? '',
+          avatar: data['avatarUrl'] ?? '',
+          lastMessage: data['lastMessage'] ?? '',
+          lastMessageTime: (data['lastMessageTime'] != null && data['lastMessageTime'] is Timestamp)
+              ? (data['lastMessageTime'] as Timestamp).toDate()
+              : DateTime.now(),
+          unreadCount: data['unreadCount'] ?? 0,
+          isOnline: data['isOnline'] ?? false,
+          badges: List<String>.from(data['badges'] ?? []),
+        );
+      }).toList();
+    });
+  }
+
+  Stream<List<ChatMessage>> getMessagesStream(String userId) {
+    return FirebaseFirestore.instance
+        .collection('chats')
+        .doc(_getChatId(userId))
+        .collection('messages')
+        .orderBy('timestamp')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ChatMessage(
+          id: doc.id,
+          senderId: data['senderId'] ?? '',
+          senderName: data['senderName'] ?? '',
+          content: data['content'] ?? '',
+          timestamp: (data['timestamp'] != null && data['timestamp'] is Timestamp)
+              ? (data['timestamp'] as Timestamp).toDate()
+              : DateTime.now(),
+          isMe: data['senderId'] == 'current_user', // Replace with actual current user id
+          type: MessageType.text,
+        );
+      }).toList();
+    });
+  }
+
+  String _getChatId(String otherUserId) {
+    final currentUserId = 'current_user'; // Replace with actual current user id
+    return currentUserId.compareTo(otherUserId) < 0
+        ? '${currentUserId}_$otherUserId'
+        : '${otherUserId}_$currentUserId';
+  }
+
+  Widget _buildBadge(String badge) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [softGreen, accentGreen],
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        badge,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
     );
   }
 
@@ -199,6 +324,14 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
             ),
           ],
         ),
+<<<<<<< HEAD
+=======
+        onTap: () {
+          setState(() {
+            _selectedUser = user;
+          });
+        },
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
       ),
     );
   }
@@ -398,6 +531,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     );
   }
 
+<<<<<<< HEAD
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
     if (_selectedUser == null) return;
@@ -418,6 +552,28 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
       _remoteService.setTyping(otherUserId: _selectedUser!.id, isTyping: false);
       _isTyping = false;
     }
+=======
+  void _sendMessage() async {
+    if (_messageController.text.trim().isEmpty || _selectedUser == null) return;
+
+    final currentUserId = 'current_user'; // Replace with actual current user id
+    final currentUserName = 'You'; // Replace with actual current user name
+    final chatId = _getChatId(_selectedUser!.id);
+    final messageData = {
+      'senderId': currentUserId,
+      'senderName': currentUserName,
+      'content': _messageController.text.trim(),
+      'timestamp': DateTime.now(),
+    };
+
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .add(messageData);
+
+    _messageController.clear();
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_chatScrollController.hasClients) {
@@ -445,6 +601,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     }
   }
 
+<<<<<<< HEAD
   Widget _buildFriendRequestTile(Map<String, dynamic> r) {
     final String fromUserId = (r['from'] as String? ?? '').trim();
     return Container(
@@ -832,6 +989,49 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
               },
             );
           },
+=======
+  Widget _buildUsersTab() {
+    return StreamBuilder<List<ChatUser>>(
+      stream: getChatUsersStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final users = snapshot.data ?? [];
+        return RefreshIndicator(
+          onRefresh: () async {},
+          color: softGreen,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              return _buildUserListItem(users[index]);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildChatsTab() {
+    return StreamBuilder<List<ChatUser>>(
+      stream: getChatUsersStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final chats = (snapshot.data ?? []).where((user) => user.lastMessage.isNotEmpty).toList();
+        return RefreshIndicator(
+          onRefresh: () async {},
+          color: softGreen,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: chats.length,
+            itemBuilder: (context, index) {
+              return _buildUserListItem(chats[index]);
+            },
+          ),
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
         );
       },
     );
@@ -899,6 +1099,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         children: [
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
+<<<<<<< HEAD
               stream: _selectedUser != null
                   ? _remoteService
                   .messagesStream(_selectedUser!.id)
@@ -940,6 +1141,14 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
                     _chatScrollController.jumpTo(_chatScrollController.position.maxScrollExtent);
                   }
                 });
+=======
+              stream: _selectedUser != null ? getMessagesStream(_selectedUser!.id) : const Stream.empty(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final messages = snapshot.data ?? [];
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
                 return ListView.builder(
                   controller: _chatScrollController,
                   padding: const EdgeInsets.all(16),
@@ -959,11 +1168,9 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedUser != null) {
-      return _buildChatView();
-    }
-
-    return Scaffold(
+    return _selectedUser != null
+        ? _buildChatView()
+        : Scaffold(
       backgroundColor: primaryWhite,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -991,7 +1198,15 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
         ),
         actions: [
           IconButton(
+<<<<<<< HEAD
             icon: Icon(Icons.notifications_outlined, color: darkGray),
+=======
+            icon: Icon(Icons.search, color: darkGray),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(Icons.add, color: darkGray),
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
             onPressed: () {},
           ),
         ],

@@ -1,3 +1,31 @@
+# ===========================================
+# SECURITY: API Keys and Sensitive Files
+# ===========================================
+# Firebase configuration files (CONTAINS API KEYS)
+/google-services.json
+/GoogleService-Info.plist
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/lib/firebase_options.dart
+/firebase.json
+
+# Android keystore and signing files
+key.properties
+**/*.keystore
+**/*.jks
+android/key.properties
+android/app/key.properties
+
+# Environment and config files
+.env
+.env.local
+.env.production
+config.json
+secrets.json
+
+# ===========================================
+# BUILD AND CACHE FILES
+# ===========================================
 # Miscellaneous
 *.class
 *.log
@@ -44,8 +72,60 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase configuration files
-/google-services.json
-/GoogleService-Info.plist
-/android/app/google-services.json
-/ios/Runner/GoogleService-Info.plist
+# ===========================================
+# PLATFORM SPECIFIC
+# ===========================================
+# Android
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+android/.cxx/
+
+# iOS
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# ===========================================
+# ALLOWED FILES (Only these will be tracked)
+# ===========================================
+# Core app files
+!lib/
+!assets/
+!screenshots/
+!pubspec.yaml
+!pubspec.lock
+!README.md
+!analysis_options.yaml
+!devtools_options.yaml
+
+# Platform configuration (without sensitive data)
+!android/build.gradle.kts
+!android/settings.gradle.kts
+!android/gradle.properties
+!android/gradle/wrapper/gradle-wrapper.properties
+!ios/Runner/Info.plist
+!ios/Runner/AppDelegate.swift
+!ios/Runner.xcodeproj/project.pbxproj
+!ios/Runner.xcworkspace/contents.xcworkspacedata
+
+# Test files
+!test/

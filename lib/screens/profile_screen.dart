@@ -788,6 +788,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+<<<<<<< HEAD
   void _showEditProfileDialog() {
     showDialog(
       context: context,
@@ -949,10 +950,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: softGreen,
           fontSize: 16,
         ),
+=======
+  Widget _buildProfileCard({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: iconColor ?? softGreen, size: 24),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: darkGray,
+          ),
+        ),
+        trailing: Icon(Icons.arrow_forward_ios, color: darkGray.withOpacity(0.4), size: 16),
+        onTap: onTap,
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
       ),
     );
   }
 
+<<<<<<< HEAD
   void _showNotificationSettingsDialog() {
     showDialog(
       context: context,
@@ -1312,6 +1347,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+=======
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -1773,6 +1810,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
 <<<<<<< HEAD
+<<<<<<< HEAD
           ),
         )
 =======
@@ -1833,3 +1871,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+=======
+          ),
+        )
+    );
+  }
+}
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c

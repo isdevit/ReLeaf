@@ -1146,7 +1146,11 @@ class _ProfileScreenState extends State<EditProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+<<<<<<< HEAD
 
+=======
+               
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
 
 
 
@@ -1156,4 +1160,8 @@ class _ProfileScreenState extends State<EditProfilePage> {
         )
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 0fb0b911fc688522f55327033b32c28e239d988c
