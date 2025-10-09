@@ -788,6 +788,495 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showEditProfileDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Profile', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.photo_camera, color: softGreen),
+              title: Text('Take Photo', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImageFromCamera();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library, color: softGreen),
+              title: Text('Choose from Gallery', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.edit, color: softGreen),
+              title: Text('Edit Username', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _isEditingUsername = true;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAchievementsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Achievements', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildAchievementItem('First Task', 'Complete your first task', _tasksCompleted >= 1, Icons.star),
+              _buildAchievementItem('Task Master', 'Complete 10 tasks', _tasksCompleted >= 10, Icons.star_border),
+              _buildAchievementItem('Task Champion', 'Complete 50 tasks', _tasksCompleted >= 50, Icons.star_border),
+              _buildAchievementItem('Task Legend', 'Complete 100 tasks', _tasksCompleted >= 100, Icons.star_border),
+              _buildAchievementItem('Week Warrior', '7-day streak', _currentStreak >= 7, Icons.local_fire_department),
+              _buildAchievementItem('Month Master', '30-day streak', _currentStreak >= 30, Icons.local_fire_department),
+              _buildAchievementItem('Point Collector', 'Earn 100 points', _pointsEarned >= 100, Icons.stars),
+              _buildAchievementItem('Point Master', 'Earn 1000 points', _pointsEarned >= 1000, Icons.stars),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementItem(String title, String description, bool isUnlocked, IconData icon) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isUnlocked ? Colors.amber : Colors.grey,
+        size: 24,
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w500,
+          color: isUnlocked ? darkGray : Colors.grey,
+        ),
+      ),
+      subtitle: Text(
+        description,
+        style: GoogleFonts.poppins(
+          color: isUnlocked ? darkGray.withOpacity(0.7) : Colors.grey,
+        ),
+      ),
+      trailing: isUnlocked
+          ? Icon(Icons.check_circle, color: softGreen)
+          : Icon(Icons.lock, color: Colors.grey),
+    );
+  }
+
+  void _showDetailedStatisticsDialog() async {
+    final totalLikes = await _getUserTotalLikes();
+    final avgDailyPosts = await _getUserAverageDailyPosts();
+    final totalEngagement = await _getUserTotalEngagement();
+    final totalShares = await _getUserTotalShares();
+    final totalComments = await _getUserTotalComments();
+    final totalViews = await _getUserTotalViews();
+    final postsThisMonth = await _getUserPostsThisMonth();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Detailed Statistics', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildStatItem('Total Posts', _formatNumber(_tasksCompleted), Icons.post_add),
+              _buildStatItem('Posts This Month', _formatNumber(postsThisMonth), Icons.calendar_month),
+              _buildStatItem('Total Likes', _formatNumber(totalLikes), Icons.favorite),
+              _buildStatItem('Total Comments', _formatNumber(totalComments), Icons.comment),
+              _buildStatItem('Total Shares', _formatNumber(totalShares), Icons.share),
+              _buildStatItem('Total Views', _formatNumber(totalViews), Icons.visibility),
+              _buildStatItem('Total Engagement', _formatNumber(totalEngagement), Icons.trending_up),
+              _buildStatItem('Avg Daily Posts', avgDailyPosts.toStringAsFixed(1), Icons.analytics),
+              _buildStatItem('Current Streak', '$_currentStreak days', Icons.local_fire_department),
+              _buildStatItem('Points Earned', _formatNumber(_pointsEarned), Icons.stars),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String title, String value, IconData icon) {
+    return ListTile(
+      leading: Icon(icon, color: softGreen, size: 24),
+      title: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w500,
+          color: darkGray,
+        ),
+      ),
+      trailing: Text(
+        value,
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.w600,
+          color: softGreen,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  void _showNotificationSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Notification Settings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              title: Text('Push Notifications', style: GoogleFonts.poppins()),
+              subtitle: Text('Receive notifications for new messages and updates'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement notification toggle
+              },
+            ),
+            SwitchListTile(
+              title: Text('Email Notifications', style: GoogleFonts.poppins()),
+              subtitle: Text('Receive email updates about your account'),
+              value: false,
+              onChanged: (value) {
+                // TODO: Implement email notification toggle
+              },
+            ),
+            SwitchListTile(
+              title: Text('Achievement Alerts', style: GoogleFonts.poppins()),
+              subtitle: Text('Get notified when you earn new achievements'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement achievement notification toggle
+              },
+            ),
+            SwitchListTile(
+              title: Text('Friend Requests', style: GoogleFonts.poppins()),
+              subtitle: Text('Notify when someone sends you a friend request'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement friend request notification toggle
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacySettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Privacy Settings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              title: Text('Public Profile', style: GoogleFonts.poppins()),
+              subtitle: Text('Allow others to view your profile'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement public profile toggle
+              },
+            ),
+            SwitchListTile(
+              title: Text('Show Online Status', style: GoogleFonts.poppins()),
+              subtitle: Text('Let others see when you are online'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement online status toggle
+              },
+            ),
+            SwitchListTile(
+              title: Text('Allow Friend Requests', style: GoogleFonts.poppins()),
+              subtitle: Text('Allow others to send you friend requests'),
+              value: true,
+              onChanged: (value) {
+                // TODO: Implement friend request toggle
+              },
+            ),
+            SwitchListTile(
+              title: Text('Show Activity Status', style: GoogleFonts.poppins()),
+              subtitle: Text('Display your recent activity to others'),
+              value: false,
+              onChanged: (value) {
+                // TODO: Implement activity status toggle
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Help & Support', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.help_outline, color: softGreen),
+              title: Text('FAQ', style: GoogleFonts.poppins()),
+              subtitle: Text('Frequently asked questions'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showFAQDialog();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.contact_support, color: softGreen),
+              title: Text('Contact Support', style: GoogleFonts.poppins()),
+              subtitle: Text('Get help from our support team'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showContactSupportDialog();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.bug_report, color: softGreen),
+              title: Text('Report a Bug', style: GoogleFonts.poppins()),
+              subtitle: Text('Report issues or bugs'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showReportBugDialog();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.feedback, color: softGreen),
+              title: Text('Send Feedback', style: GoogleFonts.poppins()),
+              subtitle: Text('Share your thoughts with us'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showFeedbackDialog();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFAQDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Frequently Asked Questions', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildFAQItem('How do I complete tasks?', 'Tasks are completed by posting about your activities in the community section.'),
+              _buildFAQItem('How do I earn points?', 'Points are earned by completing tasks, maintaining streaks, and engaging with the community.'),
+              _buildFAQItem('What are badges?', 'Badges are achievements you earn for reaching milestones in your journey.'),
+              _buildFAQItem('How do I add friends?', 'You can search for users by username and send them friend requests.'),
+              _buildFAQItem('How do I change my avatar?', 'Go to Edit Profile and choose to take a photo or select from your gallery.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFAQItem(String question, String answer) {
+    return ExpansionTile(
+      title: Text(question, style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(answer, style: GoogleFonts.poppins()),
+        ),
+      ],
+    );
+  }
+
+  void _showContactSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Contact Support', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.email, color: softGreen),
+              title: Text('Email Support', style: GoogleFonts.poppins()),
+              subtitle: Text('support@releaf.com'),
+              onTap: () {
+                // TODO: Implement email support
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Email support feature coming soon!')),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.chat, color: softGreen),
+              title: Text('Live Chat', style: GoogleFonts.poppins()),
+              subtitle: Text('Chat with our support team'),
+              onTap: () {
+                // TODO: Implement live chat
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Live chat feature coming soon!')),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReportBugDialog() {
+    final TextEditingController bugController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Report a Bug', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: bugController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Describe the bug you encountered...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              // TODO: Implement bug reporting
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Bug report submitted! Thank you for your feedback.')),
+              );
+            },
+            child: Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFeedbackDialog() {
+    final TextEditingController feedbackController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Send Feedback', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: feedbackController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Share your thoughts and suggestions...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              // TODO: Implement feedback submission
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Feedback submitted! Thank you for your input.')),
+              );
+            },
+            child: Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfileCard({
     required String title,
     required IconData icon,
@@ -1283,8 +1772,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
+<<<<<<< HEAD
           ),
         )
+=======
+            const SizedBox(height: 12),
+            _buildProfileCard(
+              title: 'Edit Profile',
+              icon: Icons.person_outline,
+              onTap: () {
+                _showEditProfileDialog();
+              },
+            ),
+            _buildProfileCard(
+              title: 'Achievements',
+              icon: Icons.emoji_events_outlined,
+              onTap: () {
+                _showAchievementsDialog();
+              },
+            ),
+            _buildProfileCard(
+              title: 'Statistics',
+              icon: Icons.analytics_outlined,
+              onTap: () {
+                _showDetailedStatisticsDialog();
+              },
+            ),
+            _buildProfileCard(
+              title: 'Notifications',
+              icon: Icons.notifications_outlined,
+              onTap: () {
+                _showNotificationSettingsDialog();
+              },
+            ),
+            _buildProfileCard(
+              title: 'Privacy Settings',
+              icon: Icons.security_outlined,
+              onTap: () {
+                _showPrivacySettingsDialog();
+              },
+            ),
+            _buildProfileCard(
+              title: 'Help & Support',
+              icon: Icons.help_outline,
+              onTap: () {
+                _showHelpSupportDialog();
+              },
+            ),
+            _buildProfileCard(
+              title: 'Sign Out',
+              icon: Icons.logout,
+              onTap: _signOut,
+              iconColor: Colors.red,
+            ),
+          ],
+        ),
+      ),
+      )
+>>>>>>> 8a4d85730ba1b3c725a4b24d0d653b3f03532524
     );
   }
 }

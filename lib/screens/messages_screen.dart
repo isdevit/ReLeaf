@@ -68,6 +68,11 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     );
   }
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 8a4d85730ba1b3c725a4b24d0d653b3f03532524
   Widget _buildUserCard(ChatUser user, {bool isSearchResult = false, VoidCallback? onAddTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -295,6 +300,11 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     );
   }
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 8a4d85730ba1b3c725a4b24d0d653b3f03532524
   Widget _buildChatInput() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -435,6 +445,121 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
     }
   }
 
+  Widget _buildFriendRequestTile(Map<String, dynamic> r) {
+    final String fromUserId = (r['from'] as String? ?? '').trim();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.orange[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: StreamBuilder<Map<String, dynamic>?>(
+        stream: _friendService.userStream(fromUserId),
+        builder: (context, snap) {
+          final userDoc = snap.data;
+          final String username = (userDoc?['username'] as String?) ?? 'Someone';
+          final String avatarUrl = (userDoc?['avatarUrl'] as String?) ?? '';
+          
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                  backgroundColor: lightGray,
+                  child: avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.grey) : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: darkGray,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Wants to be your friend',
+                        style: TextStyle(
+                          color: darkGray.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                await _friendService.acceptFriendRequest(fromUserId);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: softGreen,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              child: const Text(
+                                'Accept',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                                                         child: ElevatedButton(
+                               onPressed: () async {
+                                 await _friendService.declineFriendRequest(fromUserId);
+                               },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey[300],
+                                foregroundColor: darkGray,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              child: const Text(
+                                'Decline',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildUsersTab() {
     return Column(
       children: [
@@ -560,6 +685,7 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
       stream: _friendService.friendsStream(),
       builder: (context, friendsSnapshot) {
         final friends = friendsSnapshot.data ?? <Map<String, dynamic>>[];
+<<<<<<< HEAD
         if (friends.isEmpty) {
           return Center(
             child: Column(
@@ -600,6 +726,85 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
                 final userDoc = snap.data;
                 if (userDoc == null) {
                   return const SizedBox.shrink();
+=======
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _friendService.incomingRequestsStream(),
+          builder: (context, requestsSnapshot) {
+            final requests = requestsSnapshot.data ?? <Map<String, dynamic>>[];
+            final total = friends.length + requests.length;
+            
+            if (total == 0) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chat_bubble_outline, size: 64, color: darkGray.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No chats yet',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: darkGray,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Start a conversation with your friends',
+                      style: TextStyle(
+                        color: darkGray.withOpacity(0.6),
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: total,
+              itemBuilder: (context, index) {
+                if (index < requests.length) {
+                  final r = requests[index];
+                  return _buildFriendRequestTile(r);
+                } else {
+                  final f = friends[index - requests.length];
+                  final String friendUserId = f['userId'] as String;
+                  return StreamBuilder<Map<String, dynamic>?>(
+                    stream: _friendService.userStream(friendUserId),
+                    builder: (context, snap) {
+                      final userDoc = snap.data;
+                      if (userDoc == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final chatUser = _toChatUserFromUserDoc(userDoc);
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedUser = chatUser;
+                          });
+                          _chatService.markChatAsRead(chatUser.id);
+                          _remoteService.otherUserTypingStream(chatUser.id).listen((isTyping) {
+                            if (!mounted) return;
+                            setState(() => _otherTyping = isTyping);
+                          });
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (_chatScrollController.hasClients) {
+                              _chatScrollController.animateTo(
+                                _chatScrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          });
+                        },
+                        child: _buildUserCard(chatUser),
+                      );
+                    },
+                  );
+>>>>>>> 8a4d85730ba1b3c725a4b24d0d653b3f03532524
                 }
                 final chatUser = _toChatUserFromUserDoc(userDoc);
                 return GestureDetector(
