@@ -18,7 +18,7 @@ The app suggests personalized actions based on user history, interests, and prev
 - Firebase Authentication and Database Integration
 - Task Management and Progress Tracking
 - Social Feed and Post Sharing
-- Supabase Storage for Image Hosting
+- Firebase Storage for Image Hosting
 - Community Engagement (Likes, Comments, Shares)
 
 ---
@@ -41,7 +41,7 @@ The model analyzes user behavior and completed tasks to predict the most relevan
 - **Frontend:** Flutter (Dart)  
 - **Backend:** Firebase Firestore & Realtime Database  
 - **Authentication:** Firebase Auth  
-- **Image Storage:** Supabase Storage  
+- **Image Storage:** Firebase Storage  
 - **Machine Learning:** TensorFlow Lite  
 - **Cloud Messaging:** Firebase Cloud Messaging (optional)
 
@@ -66,7 +66,6 @@ cd releaf
 ### 2. Install dependencies
 ```bash
 flutter pub get
-```
 ```
 
 ### 3. Add your Firebase configuration
